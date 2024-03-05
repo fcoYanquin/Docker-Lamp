@@ -1,0 +1,58 @@
+version: '3'
+services:
+    #PHP
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: indap_app
+        restart: unless-stopped
+        tty: true
+        ports:
+            - "8989:80"
+        volumes:
+            - ./:/var/www
+            - ./conf/000-default.conf:/etc/apache2/sites-enabled/000-default.conf
+            - ./php/custom.ini:/usr/local/etc/php/conf.d/custom.ini
+        networks:
+            - app-network
+    #MySQL
+    db:
+        image: mysql:8.1.0
+        container_name: indap_db
+        restart: unless-stopped
+        tty: true
+        ports:
+            - "3336:3306"
+        environment:
+            MYSQL_DATABASE: laravel
+            MYSQL_ROOT_PASSWORD: password
+            SERVICE_TAGS: dev
+            SERVICE_NAME: mysql
+        volumes:
+            - ./dbdata:/var/lib/mysql/
+            - ./mysql/my.cnf:/etc/mysql/my.cnf
+        networks:
+            - app-network
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: indap_phpmyadmin
+        platform: linux/amd64
+        links:
+            - db:db
+        ports:
+            - 8011:80
+        environment:
+            MYSQL_ROOT_PASSWORD: password
+        networks:
+            - app-network
+
+#Networks
+networks:
+    app-network:
+        driver: bridge
+#Volumes
+volumes:
+    dbdata:
+        driver: local
